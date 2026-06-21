@@ -9,7 +9,7 @@ ArrayList,add-at-front,10000,49440.062
 ArrayList,contains,10000,5112.334
 ArrayList,get(index),100000,2.731
 ArrayList,add-at-end,100000,39.235
-ArrayList,add-at-front,100000,10192.146
+ArrayList,add-at-front,100000,60895.429
 ArrayList,contains,100000,86867.117
 LinkedList,get(index),1000,537.154
 LinkedList,add-at-end,1000,70.254
