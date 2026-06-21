@@ -82,6 +82,102 @@ public class BenchmarkCollections {
 
         System.out.println("\nFinal sink: " + sink);
         System.out.println("CSV written to " + CSV);
+        // After timing benchmarks, run memory measurements and write memoryB.csv
+        measureMemory();
+    }
+
+    // Memory measurement: for each structure type, force GC, measure used heap, fill with count Integers, GC, measure used heap again.
+    static void measureMemory() throws IOException {
+        String outCsv = "memoryB.csv";
+        int count = 1_000_000; // default number of elements to allocate for measurement
+        System.out.println("\nRunning memory measurements with " + count + " Integer elements per structure...");
+        try (BufferedWriter csv = new BufferedWriter(new FileWriter(outCsv))) {
+            csv.write("structure,n,used_before,used_after,bytes_per_element\n");
+
+            // list of measurement tasks: one structure at a time
+            // ArrayList
+            runMemoryCase("ArrayList", count, csv, () -> {
+                List<Integer> a = new ArrayList<>(count);
+                for (int i = 0; i < count; i++) a.add(Integer.valueOf(i));
+                return a;
+            });
+            // LinkedList
+            runMemoryCase("LinkedList", count, csv, () -> {
+                List<Integer> a = new LinkedList<>();
+                for (int i = 0; i < count; i++) a.add(Integer.valueOf(i));
+                return a;
+            });
+            // ArrayDeque
+            runMemoryCase("ArrayDeque", count, csv, () -> {
+                ArrayDeque<Integer> d = new ArrayDeque<>(count);
+                for (int i = 0; i < count; i++) d.add(Integer.valueOf(i));
+                return d;
+            });
+            // HashSet
+            runMemoryCase("HashSet", count, csv, () -> {
+                HashSet<Integer> s = new HashSet<>(count*2);
+                for (int i = 0; i < count; i++) s.add(Integer.valueOf(i));
+                return s;
+            });
+            // TreeSet
+            runMemoryCase("TreeSet", count, csv, () -> {
+                TreeSet<Integer> s = new TreeSet<>();
+                for (int i = 0; i < count; i++) s.add(Integer.valueOf(i));
+                return s;
+            });
+            // HashMap
+            runMemoryCase("HashMap", count, csv, () -> {
+                HashMap<Integer,Integer> m = new HashMap<>(count*2);
+                for (int i = 0; i < count; i++) m.put(Integer.valueOf(i), Integer.valueOf(i));
+                return m;
+            });
+            // TreeMap
+            runMemoryCase("TreeMap", count, csv, () -> {
+                TreeMap<Integer,Integer> m = new TreeMap<>();
+                for (int i = 0; i < count; i++) m.put(Integer.valueOf(i), Integer.valueOf(i));
+                return m;
+            });
+            // PriorityQueue
+            runMemoryCase("PriorityQueue", count, csv, () -> {
+                PriorityQueue<Integer> q = new PriorityQueue<>();
+                for (int i = 0; i < count; i++) q.add(Integer.valueOf(i));
+                return q;
+            });
+        }
+        System.out.println("Memory CSV written to memoryB.csv");
+    }
+
+    interface SupplierWithException<T> { T get() throws Exception; }
+
+    static void runMemoryCase(String name, int count, BufferedWriter csv, SupplierWithException<Object> supplier) throws IOException {
+        Runtime rt = Runtime.getRuntime();
+        // force GC and wait briefly
+        System.gc();
+        try { Thread.sleep(200); } catch (InterruptedException ignored) {}
+        long before = rt.totalMemory() - rt.freeMemory();
+
+        Object structure = null;
+        try {
+            structure = supplier.get();
+        } catch (Exception ex) {
+            System.err.println("Error creating structure " + name + ": " + ex);
+        }
+
+        System.gc();
+        try { Thread.sleep(200); } catch (InterruptedException ignored) {}
+        long after = rt.totalMemory() - rt.freeMemory();
+
+        long used = after - before;
+        double bytesPer = count > 0 ? (double) used / (double) count : Double.NaN;
+
+        csv.write(String.format("%s,%d,%d,%d,%.2f\n", name, count, before, after, bytesPer));
+        csv.flush();
+        System.out.printf("MEM: %s count=%d used_before=%d used_after=%d bytes/elem=%.2f\n", name, count, before, after, bytesPer);
+
+        // null and GC before next measurement
+        structure = null;
+        System.gc();
+        try { Thread.sleep(200); } catch (InterruptedException ignored) {}
     }
 
     static String guessBigO(double p) {
