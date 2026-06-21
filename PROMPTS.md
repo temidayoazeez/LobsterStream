@@ -9,3 +9,10 @@ long 'sink' printed at the end so nothing is optimised away; report nanoseconds 
 operation; compute the ratio between sizes and print a guessed Big-O; print a table and
 also write timeA.csv with a header. Do not read any data from disk inside a timed loop.
 
+# Part B
+Note which structures cost far more per element than others, and be ready to explain where those bytes go (for example a TreeMap node carries two child references and a colour bit; a HashMap keeps a bucket array with spare slots).
+
+# Part C
+
+
+# Part D
