@@ -3,6 +3,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.lang.management.*;
+import com.sun.management.OperatingSystemMXBean;
 
 public class BenchmarkCollections {
     // Defaults (can be overridden via command-line args)
@@ -34,6 +36,44 @@ public class BenchmarkCollections {
             }
         }
         System.out.println("Configuration: OPS=" + OPS + " WARMUPS=" + WARMUPS + " SIZES=" + Arrays.toString(SIZES));
+
+        // Start a background monitoring daemon that prints process CPU load, heap used,
+        // total/free physical memory, live thread count, and total GC count/time every second.
+        Thread monitor = new Thread(() -> {
+            OperatingSystemMXBean os = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+            Runtime rt = Runtime.getRuntime();
+            List<GarbageCollectorMXBean> gcs = ManagementFactory.getGarbageCollectorMXBeans();
+            ThreadMXBean tmb = ManagementFactory.getThreadMXBean();
+            while (true) {
+                try {
+                    double procCpu = os.getProcessCpuLoad(); // 0.0 - 1.0 or -1 if not available
+                    long heapUsed = rt.totalMemory() - rt.freeMemory();
+                    long totalPhys = os.getTotalPhysicalMemorySize();
+                    long freePhys = os.getFreePhysicalMemorySize();
+                    int threadCount = tmb.getThreadCount();
+                    long totalGcCount = 0;
+                    long totalGcTime = 0;
+                    for (GarbageCollectorMXBean gc : gcs) {
+                        long c = gc.getCollectionCount();
+                        if (c > 0) totalGcCount += c;
+                        long t = gc.getCollectionTime();
+                        if (t > 0) totalGcTime += t;
+                    }
+                    String cpuStr = procCpu >= 0 ? String.format("%.2f", procCpu * 100.0) + "%" : "N/A";
+                    System.out.printf("[MON] CPU=%s heapUsed=%d totalPhys=%d freePhys=%d threads=%d GCcount=%d GCtime_ms=%d\n",
+                            cpuStr, heapUsed, totalPhys, freePhys, threadCount, totalGcCount, totalGcTime);
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    break;
+                } catch (Throwable t) {
+                    System.err.println("[MON] monitor error: " + t);
+                    try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                }
+            }
+        });
+        monitor.setDaemon(true);
+        monitor.setName("benchmark-monitor");
+        monitor.start();
 
         List<Result> results = new ArrayList<>();
         try (BufferedWriter csv = new BufferedWriter(new FileWriter(CSV))) {

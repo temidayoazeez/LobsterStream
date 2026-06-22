@@ -1,5 +1,8 @@
 import java.util.*;
+import java.io.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.lang.management.*;
+import com.sun.management.OperatingSystemMXBean;
 
 /**
  * LobsterStream  —  STARTER CODE (you complete the parts marked TODO).
@@ -70,7 +73,36 @@ public class LobsterStream {
     // is empty. Write this yourself; this is part of the assessed coding.
     // ====================================================================
     void execute(int aggressorSide, int size){
-        // TODO: implement the sweep described above.
+        // Marketable order from aggressorSide consumes the opposite side
+        TreeMap<Long, ArrayDeque<Order>> opp = side(-aggressorSide);
+        while (size > 0 && !opp.isEmpty()){
+            Map.Entry<Long, ArrayDeque<Order>> bestEntry = opp.firstEntry();
+            if (bestEntry == null) break;
+            ArrayDeque<Order> q = bestEntry.getValue();
+            while (size > 0 && !q.isEmpty()){
+                Order head = q.peekFirst();
+                if (head == null) break;
+                int take = Math.min(size, head.size);
+                head.size -= take;
+                size -= take;
+                if (head.size <= 0){
+                    // remove fully filled resting order
+                    Order removed = q.pollFirst();
+                    if (removed != null) byId.remove(removed.id);
+                    // also remove from liveIds if present (swap-remove)
+                    for (int i = 0; i < liveIds.size(); i++){
+                        if (liveIds.get(i) == removed.id){
+                            long last = liveIds.get(liveIds.size() - 1);
+                            liveIds.set(i, last);
+                            liveIds.remove(liveIds.size() - 1);
+                            break;
+                        }
+                    }
+                }
+            }
+            // if this price level is empty, drop it
+            if (q.isEmpty()) opp.remove(bestEntry.getKey());
+        }
     }
 
     // ---- generate ONE event on the fly, apply it, then let it be discarded ----
@@ -102,7 +134,69 @@ public class LobsterStream {
         LobsterStream s = new LobsterStream();
         ThreadLocalRandom rng = ThreadLocalRandom.current();
 
+        // prepare scaleC.csv for measurement outputs (create file early so monitor can append comments to it)
+        java.io.BufferedWriter scaleCsv;
+        try {
+            scaleCsv = new java.io.BufferedWriter(new java.io.FileWriter("scaleC.csv"));
+            scaleCsv.write("n,bytes_per_resting_order,ns_submit,ns_cancel,ns_bestBid\n");
+            scaleCsv.flush();
+            // ensure the CSV is closed on JVM exit so the file exists and is flushed
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    scaleCsv.close();
+                } catch (IOException ignored) {}
+            }));
+        } catch (IOException e) { throw new RuntimeException(e); }
+
+    // start background monitor daemon and append its lines to a separate monitor log
+        Thread monitor = new Thread(() -> {
+            OperatingSystemMXBean os = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+            Runtime rt = Runtime.getRuntime();
+            List<GarbageCollectorMXBean> gcs = ManagementFactory.getGarbageCollectorMXBeans();
+            ThreadMXBean tmb = ManagementFactory.getThreadMXBean();
+            while (true){
+                try{
+                    double procCpu = os.getProcessCpuLoad();
+                    long heapUsed = rt.totalMemory() - rt.freeMemory();
+                    long totalPhys;
+                    long freePhys;
+                    try {
+                        java.lang.reflect.Method mTotal = os.getClass().getMethod("getTotalPhysicalMemorySize");
+                        java.lang.reflect.Method mFree = os.getClass().getMethod("getFreePhysicalMemorySize");
+                        totalPhys = ((Number)mTotal.invoke(os)).longValue();
+                        freePhys = ((Number)mFree.invoke(os)).longValue();
+                    } catch (Throwable reflEx) {
+                        // If the methods are not available (or are treated as deprecated), fall back to unknown
+                        totalPhys = -1;
+                        freePhys = -1;
+                    }
+                    int threadCount = tmb.getThreadCount();
+                    long totalGcCount = 0; long totalGcTime = 0;
+                    for (GarbageCollectorMXBean gc : gcs){ long c = gc.getCollectionCount(); if (c>0) totalGcCount += c; long t = gc.getCollectionTime(); if (t>0) totalGcTime += t; }
+                    String cpuStr = procCpu >= 0 ? String.format("%.2f", procCpu*100.0)+"%" : "N/A";
+                    String line = String.format("[MON] CPU=%s heapUsed=%d totalPhys=%d freePhys=%d threads=%d GCcount=%d GCtime_ms=%d",
+                            cpuStr, heapUsed, totalPhys, freePhys, threadCount, totalGcCount, totalGcTime);
+                    System.out.println(line);
+                    // append as a comment line to a separate monitor log so the CSV stays pure
+                    try (java.io.FileWriter fw = new java.io.FileWriter("scaleC.monitor.log", true);
+                         java.io.BufferedWriter bw = new java.io.BufferedWriter(fw)) {
+                        bw.write("#MON " + line + "\n");
+                        bw.flush();
+                    } catch (IOException ioe) {
+                        System.err.println("Failed to append monitor line to scaleC.monitor.log: " + ioe);
+                    }
+                    Thread.sleep(1000L);
+                } catch (InterruptedException ie){ break; } catch (Throwable t){ System.err.println("[MON] error: " + t); try{ Thread.sleep(1000L); } catch (InterruptedException ignored){} }
+            }
+        });
+        monitor.setDaemon(true);
+        monitor.setName("lobster-monitor");
+        monitor.start();
+
+        // scaleC.csv was created earlier so the monitor can append comment lines to it
+
         long events = 0, t0 = System.nanoTime();
+        long nextSample = 1024;
         while (usedBytes() < target){                     // stop when LIVE data reaches the target
             s.step(rng);                                  // generate + process + discard, all in memory
             events++;
@@ -110,6 +204,56 @@ public class LobsterStream {
                 double secs = (System.nanoTime() - t0) / 1e9;
                 System.out.printf("events=%,dM  rate=%,.1fM/s  liveHeap=%,d MB  restingOrders=%,d%n",
                         events / 1_000_000, (events / 1e6) / secs, usedBytes() / 1_048_576, s.byId.size());
+            }
+
+            // sampling measurement when resting order count grows past nextSample
+            int nOrders = s.byId.size();
+            if (nOrders >= nextSample){
+                try {
+                    // compute bytes per resting order
+                    double bytesPer = nOrders > 0 ? ((double)usedBytes()) / nOrders : 0.0;
+
+                    // measure best-bid lookup
+                    int warmB = 100;
+                    int itB = 1000;
+                    for (int i=0;i<warmB;i++) { s.bids.firstEntry(); }
+                    long tB0 = System.nanoTime();
+                    for (int i=0;i<itB;i++) { Map.Entry<Long,ArrayDeque<Order>> e = s.bids.firstEntry(); if (e!=null) { long k=e.getKey(); } }
+                    long tB1 = System.nanoTime();
+                    double nsBest = (tB1 - tB0) / (double) itB;
+
+                    // measure submit+cancel per-iteration to get submit and cancel times separately
+                    int itSC = 200;
+                    long totalSubmitNs = 0;
+                    long totalCancelNs = 0;
+                    ArrayList<Long> created = new ArrayList<>(); created.ensureCapacity(itSC);
+                    for (int i=0;i<itSC;i++){
+                        int side = (i%2==0)?1:-1;
+                        long price = s.mid + (i%5)*100L;
+                        int sz = 100;
+                        long t0s = System.nanoTime();
+                        s.submit(side, price, sz);
+                        long t1s = System.nanoTime();
+                        long newId = s.nextId - 1;
+                        totalSubmitNs += (t1s - t0s);
+                        created.add(newId);
+                        long t0c = System.nanoTime();
+                        s.cancel(newId);
+                        long t1c = System.nanoTime();
+                        totalCancelNs += (t1c - t0c);
+                    }
+                    double nsSubmit = totalSubmitNs / (double) itSC;
+                    double nsCancel = totalCancelNs / (double) itSC;
+
+                    // write row to CSV
+                    String row = String.format(Locale.US, "%d,%.3f,%.3f,%.3f,%.3f\n", nOrders, bytesPer, nsSubmit, nsCancel, nsBest);
+                    scaleCsv.write(row);
+                    scaleCsv.flush();
+                    System.out.print("[SCALE] " + row);
+
+                    // advance nextSample (geometric)
+                    nextSample *= 2;
+                } catch (IOException ioe){ System.err.println("scale measurement failed: " + ioe); }
             }
         }
         double secs = (System.nanoTime() - t0) / 1e9;

@@ -13,6 +13,9 @@ also write timeA.csv with a header. Do not read any data from disk inside a time
 Note which structures cost far more per element than others, and be ready to explain where those bytes go (for example a TreeMap node carries two child references and a colour bit; a HashMap keeps a bucket array with spare slots).
 
 # Part C
-
+Add a background daemon thread that, once a second, prints the program's CPU load
+(com.sun.management.OperatingSystemMXBean.getProcessCpuLoad), the used heap, the total and
+free physical RAM (getTotalMemorySize / getFreeMemorySize), the live thread count, and the
+total garbage-collection count and time.
 
 # Part D
