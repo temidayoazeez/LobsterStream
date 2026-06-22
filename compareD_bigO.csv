@@ -1,0 +1,9 @@
+structure,implementation,operation,p,guess
+ArrayList,JDK,get(index),-0.401,O(1)
+ArrayList,My,get(index),-0.441,O(1)
+ArrayList,JDK,add-at-end,-0.306,O(1)
+ArrayList,My,add-at-end,-0.301,O(1)
+HashMap,JDK,put,-0.270,O(1)
+HashMap,My,put,-0.170,O(1)
+HashMap,JDK,get,-0.316,O(1)
+HashMap,My,get,-0.079,O(1)
