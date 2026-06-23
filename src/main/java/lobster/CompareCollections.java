@@ -1,3 +1,5 @@
+package lobster;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -32,7 +34,7 @@ public class CompareCollections {
         runMapBench("HashMap", rows);
 
         // write compareD.csv
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter("compareD.csv"))) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("data/compareD.csv"))) {
             bw.write("structure,implementation,operation,n,ns_per_op,bytes_per_element\n");
             for (Row r : rows) bw.write(String.format(Locale.US, "%s,%s,%s,%d,%.3f,%.3f\n",
                     r.structure, r.impl, r.operation, r.n, r.nsPerOp, r.bytesPerElement));
@@ -44,7 +46,7 @@ public class CompareCollections {
             String key = r.structure+"|"+r.impl+"|"+r.operation;
             groups.computeIfAbsent(key, k->new ArrayList<>()).add(r);
         }
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter("compareD_bigO.csv"))) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("data/compareD_bigO.csv"))) {
             bw.write("structure,implementation,operation,p,guess\n");
             for (Map.Entry<String,List<Row>> e : groups.entrySet()){
                 List<Row> list = e.getValue();

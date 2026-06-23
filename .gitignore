@@ -1,5 +1,15 @@
 # docs
-Collections_Complexity_Lab_Report.docx
-Read_This_First.html
-Lab #2 Description.html
-benchmark_run.log
+docs/Collections_Complexity_Lab_Report.docx
+docs/Read_This_First.html
+docs/Lab #2 Description.html
+
+# compiled classes
+*.class
+target/
+
+# logs
+logs/benchmark_run.log
+logs/bench_test.log
+
+# macOS
+.DS_Store

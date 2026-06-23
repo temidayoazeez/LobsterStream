@@ -1,3 +1,5 @@
+package lobster;
+
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -27,7 +29,7 @@ public class ChartCompare {
     }
 
     public static void main(String[] args) throws Exception {
-        File csv = new File("compareD.csv");
+        File csv = new File("data/compareD.csv");
         if (!csv.exists()) { System.err.println("compareD.csv not found in cwd"); return; }
 
         // parse CSV into a map keyed by (structure,operation) -> map of impl->Series
@@ -69,8 +71,8 @@ public class ChartCompare {
                 if (k.endsWith("|ns")) timeMap.put(k.replace("|ns", ""), s.getValue());
                 if (k.endsWith("|bytes")) bytesMap.put(k.replace("|bytes", ""), s.getValue());
             }
-            if (!timeMap.isEmpty()) drawLogLogPlot(timeMap, "n", "ns/op", new File(filenameBase + "_time.png"));
-            if (!bytesMap.isEmpty()) drawLogLogPlot(bytesMap, "n", "bytes_per_element", new File(filenameBase + "_bytes.png"));
+            if (!timeMap.isEmpty()) drawLogLogPlot(timeMap, "n", "ns/op", new File("charts/" + filenameBase + "_time.png"));
+            if (!bytesMap.isEmpty()) drawLogLogPlot(bytesMap, "n", "bytes_per_element", new File("charts/" + filenameBase + "_bytes.png"));
             System.out.println("Wrote plots for " + caseKey + " -> " + filenameBase + "_*.png");
         }
     }

@@ -1,3 +1,5 @@
+package lobster;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -11,7 +13,7 @@ public class BenchmarkCollections {
     static int[] SIZES = {1_000, 10_000, 100_000, 1_000_000, 10_000_000};
     static int OPS = 1_000_000;
     static int WARMUPS = 1_000_000;
-    static final String CSV = "timeA.csv";
+    static final String CSV = "data/timeA.csv";
     static long sink = 0L;
 
     public static void main(String[] args) throws Exception {
@@ -128,7 +130,7 @@ public class BenchmarkCollections {
 
     // Memory measurement: for each structure type, force GC, measure used heap, fill with count Integers, GC, measure used heap again.
     static void measureMemory() throws IOException {
-        String outCsv = "memoryB.csv";
+        String outCsv = "data/memoryB.csv";
         int count = 1_000_000; // default number of elements to allocate for measurement
         System.out.println("\nRunning memory measurements with " + count + " Integer elements per structure...");
         try (BufferedWriter csv = new BufferedWriter(new FileWriter(outCsv))) {

@@ -1,3 +1,5 @@
+package lobster;
+
 import java.util.*;
 import java.io.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -137,7 +139,7 @@ public class LobsterStream {
         // prepare scaleC.csv for measurement outputs (create file early so monitor can append comments to it)
         java.io.BufferedWriter scaleCsv;
         try {
-            scaleCsv = new java.io.BufferedWriter(new java.io.FileWriter("scaleC.csv"));
+            scaleCsv = new java.io.BufferedWriter(new java.io.FileWriter("data/scaleC.csv"));
             scaleCsv.write("n,bytes_per_resting_order,ns_submit,ns_cancel,ns_bestBid\n");
             scaleCsv.flush();
             // ensure the CSV is closed on JVM exit so the file exists and is flushed
@@ -178,12 +180,12 @@ public class LobsterStream {
                             cpuStr, heapUsed, totalPhys, freePhys, threadCount, totalGcCount, totalGcTime);
                     System.out.println(line);
                     // append as a comment line to a separate monitor log so the CSV stays pure
-                    try (java.io.FileWriter fw = new java.io.FileWriter("scaleC.monitor.log", true);
+                    try (java.io.FileWriter fw = new java.io.FileWriter("logs/scaleC.monitor.log", true);
                          java.io.BufferedWriter bw = new java.io.BufferedWriter(fw)) {
                         bw.write("#MON " + line + "\n");
                         bw.flush();
                     } catch (IOException ioe) {
-                        System.err.println("Failed to append monitor line to scaleC.monitor.log: " + ioe);
+                        System.err.println("Failed to append monitor line to logs/scaleC.monitor.log: " + ioe);
                     }
                     Thread.sleep(1000L);
                 } catch (InterruptedException ie){ break; } catch (Throwable t){ System.err.println("[MON] error: " + t); try{ Thread.sleep(1000L); } catch (InterruptedException ignored){} }
