@@ -154,28 +154,37 @@ public class CompareCollections {
         a = null; System.gc(); return (after - before) / (double) Math.max(1, count);
     }
     static double measureMemoryListMy(int count) throws InterruptedException {
-        Runtime rt = Runtime.getRuntime(); System.gc(); Thread.sleep(100);
+        Runtime rt = Runtime.getRuntime();
+        System.gc(); Thread.sleep(200);
+        long before = rt.totalMemory() - rt.freeMemory();
         MyArrayList<Integer> a = new MyArrayList<>(count);
         for (int i=0;i<count;i++) a.add(Integer.valueOf(i));
-        System.gc(); Thread.sleep(100);
+        System.gc(); Thread.sleep(200);
         long after = rt.totalMemory() - rt.freeMemory();
-        a = null; System.gc(); return (after - (rt.totalMemory()-rt.freeMemory())) / (double) Math.max(1, count);
+        a = null; System.gc();
+        return (after - before) / (double) Math.max(1, count);
     }
     static double measureMemoryMapJdk(int count) throws InterruptedException {
-        Runtime rt = Runtime.getRuntime(); System.gc(); Thread.sleep(100);
+        Runtime rt = Runtime.getRuntime();
+        System.gc(); Thread.sleep(200);
+        long before = rt.totalMemory() - rt.freeMemory();
         java.util.HashMap<Integer,Integer> m = new java.util.HashMap<>(count*2);
         for (int i=0;i<count;i++) m.put(i,i);
-        System.gc(); Thread.sleep(100);
+        System.gc(); Thread.sleep(200);
         long after = rt.totalMemory() - rt.freeMemory();
-        m = null; System.gc(); return (after - (rt.totalMemory()-rt.freeMemory())) / (double) Math.max(1, count);
+        m = null; System.gc();
+        return (after - before) / (double) Math.max(1, count);
     }
     static double measureMemoryMapMy(int count) throws InterruptedException {
-        Runtime rt = Runtime.getRuntime(); System.gc(); Thread.sleep(100);
+        Runtime rt = Runtime.getRuntime();
+        System.gc(); Thread.sleep(200);
+        long before = rt.totalMemory() - rt.freeMemory();
         MyHashMap<Integer,Integer> m = new MyHashMap<>();
         for (int i=0;i<count;i++) m.put(i,i);
-        System.gc(); Thread.sleep(100);
+        System.gc(); Thread.sleep(200);
         long after = rt.totalMemory() - rt.freeMemory();
-        m = null; System.gc(); return (after - (rt.totalMemory()-rt.freeMemory())) / (double) Math.max(1, count);
+        m = null; System.gc();
+        return (after - before) / (double) Math.max(1, count);
     }
 
     static String guessBigO(double p) {

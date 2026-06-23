@@ -38,32 +38,27 @@ LinkedList,contains,1000000,3600937.838
 LinkedList,get(index),10000000,-1.000
 LinkedList,add-at-end,10000000,7.475
 LinkedList,add-at-front,10000000,19.947
-0,109.513
-HashSet,contains,10000,71.167
-HashSet,add,100000,65.667
-HashSet,contains,100000,27.271
-TreeSet,add,1000,173.483
-TreeSet,contains,1000,160.279
-TreeSet,add,10000,162.800
-TreeSet,contains,10000,144.100
-TreeSet,add,100000,209.729
-TreeSet,contains,100000,172.233
-HashMap,put,1000,90.533
-HashMap,get,1000,66.054
-HashMap,containsKey,1000,59.996
-HashMap,put,10000,83.642
-HashMap,get,10000,102.775
-HashMap,containsKey,10000,29.188
-HashMap,put,100000,37.746
-HashMap,get,100000,29.896
-HashMap,containsKey,100000,36.354
-TreeMap,put,1000,1899.521
-TreeMap,get,1000,113.163
-TreeMap,containsKey,1000,111.913
-TreeMap,put,10000,231.746
-TreeMap,get,10000,191.917
-TreeMap,containsKey,10000,142.758
-TreeMap,put,100000,237.300
+LinkedList,contains,10000000,29429822.672
+ArrayDeque,offer (add-end),1000,69.478
+ArrayDeque,add-at-front,1000,74.545
+ArrayDeque,peek,1000,7.041
+ArrayDeque,poll,1000,11.634
+ArrayDeque,contains,1000,392.820
+ArrayDeque,offer (add-end),10000,68.229
+ArrayDeque,add-at-front,10000,161.241
+ArrayDeque,peek,10000,0.041
+ArrayDeque,poll,10000,5.686
+ArrayDeque,contains,10000,4707.981
+ArrayDeque,offer (add-end),100000,125.366
+ArrayDeque,add-at-front,100000,30.529
+ArrayDeque,peek,100000,0.041
+ArrayDeque,poll,100000,15.817
+ArrayDeque,contains,100000,45713.246
+ArrayDeque,offer (add-end),1000000,17.091
+ArrayDeque,add-at-front,1000000,21.489
+ArrayDeque,peek,1000000,0.040
+ArrayDeque,poll,1000000,15.836
+Map,put,100000,237.300
 TreeMap,get,100000,178.000
 TreeMap,containsKey,100000,177.300
 PriorityQueue,offer,1000,82.929
