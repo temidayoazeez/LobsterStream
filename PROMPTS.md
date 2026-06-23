@@ -19,3 +19,7 @@ free physical RAM (getTotalMemorySize / getFreeMemorySize), the live thread coun
 total garbage-collection count and time.
 
 # Part D
+Help me write a MyArrayList<E> backed by an Object[] that doubles when full, with add(E),
+get(int), and contains(Object). Then a MyHashMap<K,V> using separate chaining (an array of
+linked buckets) with put, get, containsKey, that resizes when the load factor passes 0.75.
+
